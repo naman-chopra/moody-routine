@@ -29,6 +29,8 @@ enum class ActionType(
     WAIT_DELAY("Wait", "Wait before next action", "HourglassEmpty", ActionCategory.DEVICE, true),
     TOGGLE_AUTO_ROTATE_ON("Turn on auto-rotate", "Enable screen auto-rotation", "ScreenRotation", ActionCategory.DISPLAY, false),
     TOGGLE_AUTO_ROTATE_OFF("Turn off auto-rotate", "Disable screen auto-rotation", "ScreenLockPortrait", ActionCategory.DISPLAY, false),
+    TOGGLE_AUTO_BRIGHTNESS_ON("Turn on auto brightness", "Adjust screen brightness automatically", "BrightnessAuto", ActionCategory.DISPLAY, false),
+    TOGGLE_AUTO_BRIGHTNESS_OFF("Turn off auto brightness", "Use manual screen brightness", "BrightnessHigh", ActionCategory.DISPLAY, false),
     TOGGLE_FLASHLIGHT_ON("Turn on flashlight", "Enable device flashlight", "FlashlightOn", ActionCategory.DEVICE, false),
     TOGGLE_FLASHLIGHT_OFF("Turn off flashlight", "Disable device flashlight", "FlashlightOff", ActionCategory.DEVICE, false),
     SET_RINGER_NORMAL("Normal mode", "Set ringer to normal", "NotificationsActive", ActionCategory.SOUND, false),

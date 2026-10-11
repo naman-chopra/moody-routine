@@ -62,6 +62,7 @@ Routines automate actions based on environmental triggers:
 * **Display**:
   * Screen brightness adjustment (0-100%).
   * Auto-rotate toggle (enable/disable).
+  * Auto brightness toggle (enable/disable).
   * Dark mode toggle (enable/disable).
   * Home screen wallpaper: Apply selected images using Android `FLAG_SYSTEM`.
   * Lock screen wallpaper: Apply selected images using Android `FLAG_LOCK`.
@@ -160,7 +161,7 @@ Generated APK paths:
 | `ACCESS_FINE_LOCATION` | Optional | Location-based geofence triggers (arrival / departure) |
 | `PACKAGE_USAGE_STATS` | Optional | Detection of app open/close events and "Stay Focused" app blocker |
 | `ACCESS_NOTIFICATION_POLICY` | System | Toggling Do Not Disturb states |
-| `WRITE_SETTINGS` | System | Controlling screen brightness and system auto-rotation |
+| `WRITE_SETTINGS` | System | Controlling screen brightness, auto brightness, and system auto-rotation |
 | `SYSTEM_ALERT_WINDOW` | Optional | Displaying the "Stay Focused" blocker overlay over restricted apps |
 | `SET_WALLPAPER` | System | Applying Home and Lock screen wallpapers |
 | `BLUETOOTH_CONNECT` | Hardware | Detecting Bluetooth device connection states |

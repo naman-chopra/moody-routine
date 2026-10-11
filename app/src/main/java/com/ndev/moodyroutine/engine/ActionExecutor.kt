@@ -140,6 +140,19 @@ class ActionExecutor(private val context: Context) {
                         }
                     }
                 }
+                ActionType.TOGGLE_AUTO_BRIGHTNESS_ON,
+                ActionType.TOGGLE_AUTO_BRIGHTNESS_OFF -> {
+                    if (!prefs.contains("${prefix}brightness_mode")) {
+                        try {
+                            val current = Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE)
+                            editor.putInt("${prefix}brightness_mode", current)
+                            savedSomething = true
+                            AppLogger.i("ActionExecutor", "Snapshotted brightness mode: $current for $entityName")
+                        } catch (e: Exception) {
+                            AppLogger.w("ActionExecutor", "Could not snapshot brightness mode", e)
+                        }
+                    }
+                }
                 ActionType.TOGGLE_FLASHLIGHT_ON -> {
                     editor.putBoolean("${prefix}flashlight_on", true)
                     savedSomething = true
@@ -212,6 +225,18 @@ class ActionExecutor(private val context: Context) {
                 }
             }
 
+            if (prefs.contains("${prefix}brightness_mode")) {
+                val mode = prefs.getInt("${prefix}brightness_mode", -1)
+                if (mode >= 0 && Settings.System.canWrite(context)) {
+                    try {
+                        Settings.System.putInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS_MODE, mode)
+                        AppLogger.i("ActionExecutor", "Reverted brightness mode to $mode for $entityName")
+                    } catch (e: Exception) {
+                        AppLogger.e("ActionExecutor", "Could not restore brightness mode", e)
+                    }
+                }
+            }
+
             if (prefs.contains("${prefix}auto_rotate")) {
                 val rotate = prefs.getInt("${prefix}auto_rotate", -1)
                 if (rotate >= 0 && Settings.System.canWrite(context)) {
@@ -249,6 +274,7 @@ class ActionExecutor(private val context: Context) {
                 .remove("${prefix}volume_notif")
                 .remove("${prefix}dnd_filter")
                 .remove("${prefix}brightness")
+                .remove("${prefix}brightness_mode")
                 .remove("${prefix}auto_rotate")
                 .remove("${prefix}flashlight_on")
                 .remove("${prefix}dark_mode")
@@ -336,6 +362,30 @@ class ActionExecutor(private val context: Context) {
                     AppLogger.i("ActionExecutor", "Auto-rotate turned OFF")
                 } else {
                     AppLogger.w("ActionExecutor", "WRITE_SETTINGS permission required for auto-rotate")
+                }
+            }
+            ActionType.TOGGLE_AUTO_BRIGHTNESS_ON -> {
+                if (Settings.System.canWrite(context)) {
+                    Settings.System.putInt(
+                        context.contentResolver,
+                        Settings.System.SCREEN_BRIGHTNESS_MODE,
+                        Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+                    )
+                    AppLogger.i("ActionExecutor", "Auto brightness turned ON")
+                } else {
+                    AppLogger.w("ActionExecutor", "WRITE_SETTINGS permission required for auto brightness")
+                }
+            }
+            ActionType.TOGGLE_AUTO_BRIGHTNESS_OFF -> {
+                if (Settings.System.canWrite(context)) {
+                    Settings.System.putInt(
+                        context.contentResolver,
+                        Settings.System.SCREEN_BRIGHTNESS_MODE,
+                        Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
+                    )
+                    AppLogger.i("ActionExecutor", "Auto brightness turned OFF")
+                } else {
+                    AppLogger.w("ActionExecutor", "WRITE_SETTINGS permission required for auto brightness")
                 }
             }
 
