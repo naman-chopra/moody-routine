@@ -116,7 +116,7 @@ Routines automate actions based on environmental triggers:
 
 ### Verification (AppVerifier / Checksum)
 
-To ensure the integrity and authenticity of the downloaded APK, you can verify the signing certificate using [AppVerifier](https://github.com/Bubu/AppVerifier) or `apksigner`:
+To ensure the integrity and authenticity of the downloaded APK, you can verify the signing certificate using [AppVerifier](https://github.com/soupslurpr/AppVerifier) or `apksigner`:
 
 * **Package Name:** `com.ndev.moodyroutine`
 * **Signing Key SHA-256 Fingerprint:**
