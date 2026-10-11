@@ -93,7 +93,7 @@ Routines automate actions based on environmental triggers:
 
 ### Pre-built APK
 
-Download the latest release package from the [Releases](https://github.com/ndev-hoster/moods-and-routes/releases) section.
+Download the latest release package from the [Releases](https://github.com/naman-chopra/moody-routine/releases) section.
 
 1. Transfer the `.apk` file to your Android device.
 2. Open the file and allow installation from unknown sources if prompted.
@@ -107,8 +107,8 @@ Prerequisites:
 
 ```bash
 # Clone the repository
-git clone https://github.com/ndev-hoster/moods-and-routes.git
-cd moods-and-routes
+git clone https://github.com/naman-chopra/moody-routine.git
+cd moody-routine
 
 # Build debug APK
 ./gradlew assembleDebug
