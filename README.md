@@ -102,13 +102,31 @@ Routines automate actions based on environmental triggers:
 
 ## Installation
 
-### Pre-built APK
+### Get MoodyRoutine
 
-Download the latest release package from the [Releases](https://github.com/naman-chopra/moody-routine/releases) section.
+| Method | Source / Action |
+|---|---|
+| **GitHub Releases** | [Download APK](https://github.com/naman-chopra/moody-routine/releases) |
+| **Obtainium** | [![Add to Obtainium](https://img.shields.io/badge/Obtainium-Add%20to%20App-3DDC84?style=flat-square&logo=android&logoColor=white)](obtainium://app/https://github.com/naman-chopra/moody-routine) |
+| **F-Droid** | *In review* ([MR !52105](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/52105)) |
 
-1. Transfer the `.apk` file to your Android device.
+1. Download the APK (or use the one-click **Add to Obtainium** badge above).
 2. Open the file and allow installation from unknown sources if prompted.
 3. Grant required runtime permissions on first launch.
+
+### Verification (AppVerifier / Checksum)
+
+To ensure the integrity and authenticity of the downloaded APK, you can verify the signing certificate using [AppVerifier](https://github.com/Bubu/AppVerifier) or `apksigner`:
+
+* **Package Name:** `com.ndev.moodyroutine`
+* **Signing Key SHA-256 Fingerprint:**
+  ```text
+  E1:22:92:3E:45:9F:D6:ED:0A:DD:A5:1A:53:0B:BE:61:DF:8D:66:F8:E8:28:AA:B8:7A:82:07:AD:B6:61:E9:CB
+  ```
+* **Signing Key SHA-1 Fingerprint:**
+  ```text
+  74:E0:8B:EA:24:C8:71:3C:E8:31:D1:0A:F0:B7:7E:7D:32:33:71:99
+  ```
 
 ### Building from Source
 
