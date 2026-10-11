@@ -15,3 +15,6 @@ local.properties
 *.jks
 *.keystore
 keystore.properties
+/scripts/
+*.py
+logs.txt
