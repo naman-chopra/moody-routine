@@ -54,6 +54,7 @@ class AutomationService : Service() {
         const val ACTION_TURN_OFF_MODE = "com.ndev.moodyroutine.action.TURN_OFF_MODE"
         const val ACTION_REPOST_SERVICE_NOTIFICATION = "com.ndev.moodyroutine.action.REPOST_SERVICE_NOTIFICATION"
         const val EXTRA_MODE_ID = "extra_mode_id"
+        var serviceStartTime: Long = 0L
 
         private val snoozedApps = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
@@ -149,7 +150,7 @@ class AutomationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        GeofenceReceiver.serviceStartTime = System.currentTimeMillis()
+        serviceStartTime = System.currentTimeMillis()
         AppLogger.i("AutomationService", "AutomationService created")
         createNotificationChannel()
         val notification = buildServiceNotification()

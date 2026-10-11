@@ -121,16 +121,16 @@ Prerequisites:
 git clone https://github.com/naman-chopra/moody-routine.git
 cd moody-routine
 
-# Build debug APK
-./gradlew assembleDebug
+# Build FOSS release APK (100% libre / de-Googled, native AOSP LocationManager)
+./gradlew assembleFossRelease
 
-# Build optimized release APK
-./gradlew assembleRelease
+# Build GMS release APK (Google Play Services location provider)
+./gradlew assembleGmsRelease
 ```
 
 Generated APK paths:
-* Debug: `app/build/outputs/apk/debug/app-debug.apk`
-* Release: `app/build/outputs/apk/release/app-release-unsigned.apk`
+* FOSS Release: `app/build/outputs/apk/foss/release/app-foss-release.apk`
+* GMS Release: `app/build/outputs/apk/gms/release/app-gms-release.apk`
 
 ---
 

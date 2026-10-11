@@ -50,8 +50,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
+import com.ndev.moodyroutine.location.LocationClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -262,7 +261,6 @@ fun OsmLocationPickerDialog(
     var isInfoExpanded by remember { mutableStateOf(false) }
 
     var mapViewRef by remember { mutableStateOf<MapView?>(null) }
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var reverseGeocodeJob by remember { mutableStateOf<Job?>(null) }
 
     fun updateMapCircle(map: MapView, centerPoint: GeoPoint, rad: Int) {
@@ -301,10 +299,10 @@ fun OsmLocationPickerDialog(
     fun locateCurrentPosition(isUserExplicit: Boolean = false) {
         isLocating = true
         try {
-            // Fast path: use last known location immediately if available
-            fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
-                if (lastLoc != null && (!userTouchedMap || isUserExplicit)) {
-                    val pt = GeoPoint(lastLoc.latitude, lastLoc.longitude)
+            LocationClient.getLastOrCurrentLocation(context) { loc ->
+                isLocating = false
+                if (loc != null && (!userTouchedMap || isUserExplicit)) {
+                    val pt = GeoPoint(loc.latitude, loc.longitude)
                     currentGeoPoint = pt
                     isProgrammaticMove = true
                     mapViewRef?.let { map ->
@@ -319,28 +317,6 @@ fun OsmLocationPickerDialog(
                     }
                 }
             }
-
-            // Fresh accurate location
-            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-                .addOnSuccessListener { loc ->
-                    isLocating = false
-                    if (loc != null && (!userTouchedMap || isUserExplicit)) {
-                        val newPoint = GeoPoint(loc.latitude, loc.longitude)
-                        currentGeoPoint = newPoint
-                        isProgrammaticMove = true
-                        mapViewRef?.let { map ->
-                            map.controller.setCenter(newPoint)
-                            map.controller.setZoom(16.5)
-                            updateMapCircle(map, newPoint, radius)
-                        }
-                        triggerReverseGeocode(newPoint, immediate = true)
-                        coroutineScope.launch {
-                            delay(800)
-                            isProgrammaticMove = false
-                        }
-                    }
-                }
-                .addOnFailureListener { isLocating = false }
         } catch (_: SecurityException) {
             isLocating = false
         }

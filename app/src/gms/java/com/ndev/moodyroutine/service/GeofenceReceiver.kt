@@ -13,9 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class GeofenceReceiver : BroadcastReceiver() {
-    companion object {
-        var serviceStartTime: Long = 0L
-    }
 
     override fun onReceive(context: Context?, intent: Intent?) {
         intent ?: return
@@ -28,7 +25,7 @@ class GeofenceReceiver : BroadcastReceiver() {
         val transition = geofencingEvent.geofenceTransition
         val isEntering = transition == Geofence.GEOFENCE_TRANSITION_ENTER
         val isExiting = transition == Geofence.GEOFENCE_TRANSITION_EXIT
-        val isInitial = (System.currentTimeMillis() - serviceStartTime) < 4000L
+        val isInitial = (System.currentTimeMillis() - AutomationService.serviceStartTime) < 4000L
 
         if (isEntering || isExiting) {
             val triggeringGeofences = geofencingEvent.triggeringGeofences ?: emptyList()

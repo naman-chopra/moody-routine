@@ -3,8 +3,7 @@ package com.ndev.moodyroutine.service
 import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
-import android.os.Looper
-import com.google.android.gms.location.*
+import com.ndev.moodyroutine.location.LocationClient
 import com.ndev.moodyroutine.util.AppLogger
 import com.ndev.moodyroutine.data.model.Mode
 import com.ndev.moodyroutine.data.model.Routine
@@ -25,7 +24,6 @@ data class LocationTarget(
 )
 
 class LocationTracker(private val context: Context) {
-    private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
     private val scope = CoroutineScope(Dispatchers.IO)
     private var isTracking = false
     private var hasInitialFix = false
@@ -34,13 +32,6 @@ class LocationTracker(private val context: Context) {
 
     private val insideTargets = mutableSetOf<String>()
     private var targets = listOf<LocationTarget>()
-
-    private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(result: LocationResult) {
-            val location = result.lastLocation ?: return
-            checkLocation(location)
-        }
-    }
 
     fun updateTargets(routines: List<Routine>, modes: List<Mode>) {
         val newTargets = mutableListOf<LocationTarget>()
@@ -107,26 +98,11 @@ class LocationTracker(private val context: Context) {
         if (isTracking) return
         try {
             hasInitialFix = false
-            val locationRequest = LocationRequest.Builder(
-                Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-                30_000L
-            ).apply {
-                setMinUpdateIntervalMillis(15_000L)
-                setMaxUpdateDelayMillis(45_000L)
-            }.build()
-
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                Looper.getMainLooper()
-            )
+            LocationClient.requestLocationUpdates(context, 30_000L) { location ->
+                checkLocation(location)
+            }
             isTracking = true
             AppLogger.i("LocationTracker", "LocationTracker started updates (interval: 30s)")
-
-            // Immediate check with last location
-            fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
-                if (loc != null) checkLocation(loc, isExplicitInitial = true)
-            }
         } catch (e: SecurityException) {
             AppLogger.e("LocationTracker", "Location permission missing in LocationTracker", e)
         }
@@ -134,7 +110,7 @@ class LocationTracker(private val context: Context) {
 
     fun stopTracking() {
         if (!isTracking) return
-        fusedLocationClient.removeLocationUpdates(locationCallback)
+        LocationClient.removeLocationUpdates(context)
         isTracking = false
         hasInitialFix = false
         insideTargets.clear()

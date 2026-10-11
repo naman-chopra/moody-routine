@@ -42,8 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.graphics.drawable.toBitmap
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
+import com.ndev.moodyroutine.location.LocationClient
 import com.ndev.moodyroutine.ui.theme.SamsungBlue
 import com.ndev.moodyroutine.ui.util.HumanFormatter
 import java.util.Locale
@@ -649,8 +648,6 @@ fun LocationConfigDialog(
     var isLocating by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
 
-    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
-
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { perms ->
@@ -660,43 +657,38 @@ fun LocationConfigDialog(
             isLocating = true
             statusMessage = "Locating your position..."
             try {
-                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
-                    .addOnSuccessListener { loc ->
-                        isLocating = false
-                        if (loc != null) {
-                            latitude = loc.latitude
-                            longitude = loc.longitude
-                            hasCoordinates = true
-                            coroutineScope.launch(Dispatchers.IO) {
-                                try {
-                                    val geocoder = Geocoder(context, Locale.getDefault())
-                                    val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
-                                    if (!addresses.isNullOrEmpty()) {
-                                        val addr = addresses[0]
-                                        val fullAddr = addr.getAddressLine(0) ?: ""
-                                        val featureName = addr.featureName ?: addr.subLocality ?: addr.locality ?: "My Location"
-                                        withContext(Dispatchers.Main) {
-                                            addressText = fullAddr
-                                            if (locationName.isBlank() || locationName == "Home") {
-                                                locationName = featureName
-                                            }
-                                            statusMessage = "Location updated"
-                                        }
-                                    }
-                                } catch (e: Exception) {
+                LocationClient.getLastOrCurrentLocation(context) { loc ->
+                    isLocating = false
+                    if (loc != null) {
+                        latitude = loc.latitude
+                        longitude = loc.longitude
+                        hasCoordinates = true
+                        coroutineScope.launch(Dispatchers.IO) {
+                            try {
+                                val geocoder = Geocoder(context, Locale.getDefault())
+                                val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+                                if (!addresses.isNullOrEmpty()) {
+                                    val addr = addresses[0]
+                                    val fullAddr = addr.getAddressLine(0) ?: ""
+                                    val featureName = addr.featureName ?: addr.subLocality ?: addr.locality ?: "My Location"
                                     withContext(Dispatchers.Main) {
-                                        statusMessage = "Location found: ${String.format("%.4f, %.4f", loc.latitude, loc.longitude)}"
+                                        addressText = fullAddr
+                                        if (locationName.isBlank() || locationName == "Home") {
+                                            locationName = featureName
+                                        }
+                                        statusMessage = "Location updated"
                                     }
                                 }
+                            } catch (e: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    statusMessage = "Location found: ${String.format(Locale.US, "%.4f, %.4f", loc.latitude, loc.longitude)}"
+                                }
                             }
-                        } else {
-                            statusMessage = "Unable to fetch GPS. Ensure location is on."
                         }
+                    } else {
+                        statusMessage = "Unable to fetch GPS. Ensure location is on."
                     }
-                    .addOnFailureListener {
-                        isLocating = false
-                        statusMessage = "Location request failed"
-                    }
+                }
             } catch (e: SecurityException) {
                 isLocating = false
                 statusMessage = "Location permission denied"

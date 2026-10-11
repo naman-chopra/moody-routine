@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Geofence Receiver for Play Services location triggers -->
+        <receiver
+            android:name=".service.GeofenceReceiver"
+            android:exported="true" />
+    </application>
+</manifest>

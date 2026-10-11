@@ -76,6 +76,16 @@ android {
             applicationIdSuffix = ".debug"
         }
     }
+
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("foss") {
+            dimension = "distribution"
+        }
+        create("gms") {
+            dimension = "distribution"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -127,7 +137,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
 
     // Location & Maps (OpenStreetMap)
-    implementation(libs.play.services.location)
+    "gmsImplementation"(libs.play.services.location)
     implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     debugImplementation(libs.androidx.ui.tooling)
