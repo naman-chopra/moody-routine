@@ -15,6 +15,17 @@ MoodyRoutine operates on two primary automation abstractions:
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/02_modes_dashboard.png" width="23%" alt="Modes Dashboard" />
+  <img src="screenshots/03_mode_detail.png" width="23%" alt="Mode Details" />
+  <img src="screenshots/04_notification_shade.png" width="23%" alt="Active Notification" />
+  <img src="screenshots/06_create_routine.png" width="23%" alt="Routine Builder" />
+</p>
+
+---
+
 ## Features
 
 ### Modes
