@@ -40,24 +40,58 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Build APKs
-        run: ./gradlew assembleDebug assembleRelease --stacktrace
+        run: |
+          ./gradlew assembleFossRelease assembleGmsRelease assembleFossDebug --stacktrace
         env:
           KEYSTORE_PATH: moodyroutine-release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Prepare Artifacts
+      - name: Prepare Artifacts & Checksums
+        id: prepare-artifacts
         run: |
           mkdir -p release-artifacts
           TAG_NAME="${GITHUB_REF_NAME:-latest}"
-          cp app/build/outputs/apk/debug/app-debug.apk "release-artifacts/MoodyRoutine-${TAG_NAME}-debug.apk"
-          if [ -f app/build/outputs/apk/release/app-release.apk ]; then
-            cp app/build/outputs/apk/release/app-release.apk "release-artifacts/MoodyRoutine-${TAG_NAME}-release.apk"
-          elif [ -f app/build/outputs/apk/release/app-release-unsigned.apk ]; then
-            cp app/build/outputs/apk/release/app-release-unsigned.apk "release-artifacts/MoodyRoutine-${TAG_NAME}-release-unsigned.apk"
-          fi
-          ls -la release-artifacts/
+
+          # Helper function to find and copy APKs (handles signed vs unsigned fallbacks)
+          copy_apk() {
+            local search_path="$1"
+            local dest_name="$2"
+            if [ -f "${search_path}/app-foss-release.apk" ]; then
+              cp "${search_path}/app-foss-release.apk" "release-artifacts/${dest_name}"
+            elif [ -f "${search_path}/app-foss-release-unsigned.apk" ]; then
+              cp "${search_path}/app-foss-release-unsigned.apk" "release-artifacts/${dest_name}"
+            elif [ -f "${search_path}/app-gms-release.apk" ]; then
+              cp "${search_path}/app-gms-release.apk" "release-artifacts/${dest_name}"
+            elif [ -f "${search_path}/app-gms-release-unsigned.apk" ]; then
+              cp "${search_path}/app-gms-release-unsigned.apk" "release-artifacts/${dest_name}"
+            elif [ -f "${search_path}/app-foss-debug.apk" ]; then
+              cp "${search_path}/app-foss-debug.apk" "release-artifacts/${dest_name}"
+            fi
+          }
+
+          copy_apk "app/build/outputs/apk/foss/release" "MoodyRoutine-${TAG_NAME}-foss.apk"
+          copy_apk "app/build/outputs/apk/gms/release" "MoodyRoutine-${TAG_NAME}-gms.apk"
+          copy_apk "app/build/outputs/apk/foss/debug" "MoodyRoutine-${TAG_NAME}-foss-debug.apk"
+
+          # Generate SHA-256 Checksums
+          cd release-artifacts
+          sha256sum *.apk > checksums.txt
+          cat checksums.txt
+          cd ..
+
+          # Prepare release notes footer
+          CHECKSUMS_MD=$(awk '{print "- `" $2 "`: `" $1 "`"}' release-artifacts/checksums.txt)
+          {
+            echo "### Package Verification"
+            echo ""
+            echo "**Signing Certificate SHA-256:**"
+            echo "\`E1:22:92:3E:45:9F:D6:ED:0A:DD:A5:1A:53:0B:BE:61:DF:8D:66:F8:E8:28:AA:B8:7A:82:07:AD:B6:61:E9:CB\`"
+            echo ""
+            echo "#### SHA-256 Checksums"
+            echo "$CHECKSUMS_MD"
+          } > release_notes_footer.md
 
       - name: Determine Pre-release status
         id: check-prerelease
@@ -74,6 +108,7 @@ jobs:
         with:
           name: "MoodyRoutine ${{ github.ref_name }}"
           files: release-artifacts/*
+          body_path: release_notes_footer.md
           prerelease: ${{ steps.check-prerelease.outputs.is_prerelease }}
           generate_release_notes: true
           draft: false
