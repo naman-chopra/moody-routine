@@ -107,7 +107,7 @@ Routines automate actions based on environmental triggers:
 | Method | Source / Action |
 |---|---|
 | **GitHub Releases** | [Download APK](https://github.com/naman-chopra/moody-routine/releases) |
-| **Obtainium** | [![Add to Obtainium](https://img.shields.io/badge/Obtainium-Add%20to%20App-3DDC84?style=flat-square&logo=android&logoColor=white)](https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/naman-chopra/moody-routine) |
+| **Obtainium** | [![Add to Obtainium](https://img.shields.io/badge/Obtainium-Add%20to%20App-3DDC84?style=flat-square&logo=android&logoColor=white)](https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fadd%2Fhttps%3A%2F%2Fgithub.com%2Fnaman-chopra%2Fmoody-routine) |
 | **F-Droid** | *In review* ([MR !52105](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/52105)) |
 
 1. Download the APK (or use the one-click **Add to Obtainium** badge above).
