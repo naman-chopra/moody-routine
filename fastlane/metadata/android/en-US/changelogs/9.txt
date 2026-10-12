@@ -1,0 +1,3 @@
+- Added FOSS and GMS product flavors
+- Native AOSP LocationManager support for 100% de-Googled devices
+- F-Droid reproducibility optimizations
