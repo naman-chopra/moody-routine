@@ -74,6 +74,8 @@ object UiIcons {
             ActionType.WAIT_DELAY -> Icons.Rounded.HourglassEmpty
             ActionType.TOGGLE_AUTO_ROTATE_ON -> Icons.Rounded.ScreenRotation
             ActionType.TOGGLE_AUTO_ROTATE_OFF -> Icons.Rounded.ScreenLockPortrait
+            ActionType.TOGGLE_AUTO_BRIGHTNESS_ON -> Icons.Rounded.BrightnessAuto
+            ActionType.TOGGLE_AUTO_BRIGHTNESS_OFF -> Icons.Rounded.BrightnessHigh
             ActionType.TOGGLE_FLASHLIGHT_ON -> Icons.Rounded.FlashlightOn
             ActionType.TOGGLE_FLASHLIGHT_OFF -> Icons.Rounded.FlashlightOff
             ActionType.SET_RINGER_NORMAL -> Icons.Rounded.NotificationsActive

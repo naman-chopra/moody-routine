@@ -114,6 +114,8 @@ object HumanFormatter {
             }
             ActionType.TOGGLE_AUTO_ROTATE_ON -> "Turn on"
             ActionType.TOGGLE_AUTO_ROTATE_OFF -> "Turn off"
+            ActionType.TOGGLE_AUTO_BRIGHTNESS_ON -> "Turn on"
+            ActionType.TOGGLE_AUTO_BRIGHTNESS_OFF -> "Turn off"
             ActionType.TOGGLE_FLASHLIGHT_ON -> "Turn on"
             ActionType.TOGGLE_FLASHLIGHT_OFF -> "Turn off"
             ActionType.SET_RINGER_NORMAL -> "Sound on"

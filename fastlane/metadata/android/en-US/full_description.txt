@@ -15,7 +15,7 @@ Bundle device settings into situational profiles:
 ### Routines (IF -> THEN Automation)
 Automate actions based on environmental triggers:
 - Conditions (IF): Schedule (time ranges, recurrence), Battery & Charging thresholds, Wi-Fi connected/disconnected (with SSID targeting), Bluetooth devices, App open/close, Headphones connected/disconnected, and Location geofencing via OpenStreetMap.
-- Actions (THEN): Audio sliders (Ring, media, alarm, notification), Ringer modes (Normal, vibrate, silent), Do Not Disturb states, Brightness adjustment, Auto-rotate toggle, Dark mode toggle, Home/Lock screen wallpapers, App launcher, and App shortcuts.
+- Actions (THEN): Audio sliders (Ring, media, alarm, notification), Ringer modes (Normal, vibrate, silent), Do Not Disturb states, Brightness adjustment, Auto brightness toggle, Auto-rotate toggle, Dark mode toggle, Home/Lock screen wallpapers, App launcher, and App shortcuts.
 
 ### Privacy & Libre Software
 - 100% Free & Open Source (GPL-3.0)
