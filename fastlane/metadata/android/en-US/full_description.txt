@@ -1,23 +1,29 @@
-MoodyRoutine brings contextual automation, situational profiles, and event-driven workflows to any Android device running Android 8.0 (API 26) or higher. It reproduces the design philosophy, ergonomics, and automation capabilities of Samsung's One UI Modes & Routines without requiring root privileges or manufacturer-locked frameworks.
+<p>MoodyRoutine brings contextual automation, situational profiles, and event-driven workflows to any Android device running Android 8.0 (API 26) or higher. It reproduces the design philosophy, ergonomics, and automation capabilities of Samsung's One UI Modes & Routines without requiring root privileges or manufacturer-locked frameworks.</p>
 
-### Modes (Situational Profiles)
-Bundle device settings into situational profiles:
-- Sleep Mode: Enables Do Not Disturb, reduces screen brightness, activates dark mode, and silences notifications.
-- Work Mode: Switches ringer to vibrate, mutes media, and restricts distracting applications.
-- Driving Mode: Enables auto-rotate, adjusts media volume, and launches navigation.
-- Exercise Mode: Configures media volume and launches workout tracking.
-- Relax Mode: Reduces screen brightness, silences alerts, and starts music or ambient audio.
-- Custom Modes: Define arbitrary modes with custom naming, color schemes, and 30+ categorized icons.
-- Stay Focused (App Blocker): Restricts selected applications while a mode is active, with options to close, snooze for 5 minutes, or turn off the mode.
-- State Reversion: Automatically snapshots prior volume, ringer, and display settings before mode activation, restoring them upon deactivation.
-- Status Bar Notifications: Ongoing foreground notification displaying active mode state with an instant "Turn off" action.
+<p><b>Modes (Situational Profiles)</b><br/>
+Bundle device settings into situational profiles:</p>
+<ul>
+  <li><b>Sleep Mode:</b> Enables Do Not Disturb, reduces screen brightness, activates dark mode, and silences notifications.</li>
+  <li><b>Work Mode:</b> Switches ringer to vibrate, mutes media, and restricts distracting applications.</li>
+  <li><b>Driving Mode:</b> Enables auto-rotate, adjusts media volume, and launches navigation.</li>
+  <li><b>Exercise Mode:</b> Configures media volume and launches workout tracking.</li>
+  <li><b>Relax Mode:</b> Reduces screen brightness, silences alerts, and starts music or ambient audio.</li>
+  <li><b>Custom Modes:</b> Define arbitrary modes with custom naming, color schemes, and 30+ categorized icons.</li>
+  <li><b>Stay Focused (App Blocker):</b> Restricts selected applications while a mode is active, with options to close, snooze for 5 minutes, or turn off the mode.</li>
+  <li><b>State Reversion:</b> Automatically snapshots prior volume, ringer, and display settings before mode activation, restoring them upon deactivation.</li>
+  <li><b>Status Bar Notifications:</b> Ongoing foreground notification displaying active mode state with an instant "Turn off" action.</li>
+</ul>
 
-### Routines (IF -> THEN Automation)
-Automate actions based on environmental triggers:
-- Conditions (IF): Schedule (time ranges, recurrence), Battery & Charging thresholds, Wi-Fi connected/disconnected (with SSID targeting), Bluetooth devices, App open/close, Headphones connected/disconnected, and Location geofencing via OpenStreetMap.
-- Actions (THEN): Audio sliders (Ring, media, alarm, notification), Ringer modes (Normal, vibrate, silent), Do Not Disturb states, Brightness adjustment, Auto-rotate toggle, Dark mode toggle, Home/Lock screen wallpapers, App launcher, and App shortcuts.
+<p><b>Routines (IF &rarr; THEN Automation)</b><br/>
+Automate actions based on environmental triggers:</p>
+<ul>
+  <li><b>Conditions (IF):</b> Schedule (time ranges, recurrence), Battery &amp; Charging thresholds, Wi-Fi connected/disconnected (with SSID targeting), Bluetooth devices, App open/close, Headphones connected/disconnected, and Location geofencing via OpenStreetMap.</li>
+  <li><b>Actions (THEN):</b> Audio sliders (Ring, media, alarm, notification), Ringer modes (Normal, vibrate, silent), Do Not Disturb states, Brightness adjustment, Auto-rotate toggle, Dark mode toggle, Home/Lock screen wallpapers, App launcher, and App shortcuts.</li>
+</ul>
 
-### Privacy & Libre Software
-- 100% Free & Open Source (GPL-3.0)
-- Zero trackers, zero analytics, zero ads
-- Fully offline operation with no account or registration required
+<p><b>Privacy &amp; Libre Software</b></p>
+<ul>
+  <li>100% Free &amp; Open Source (GPL-3.0)</li>
+  <li>Zero trackers, zero analytics, zero ads</li>
+  <li>Fully offline operation with no account or registration required</li>
+</ul>
