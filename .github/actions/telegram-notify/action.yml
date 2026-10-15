@@ -1,0 +1,120 @@
+name: 'Telegram Notification'
+description: 'Send modular, formatted Telegram notifications for GitHub Actions workflows'
+inputs:
+  bot-token:
+    description: 'Telegram Bot Token'
+    required: true
+  chat-id:
+    description: 'Telegram Chat ID'
+    required: true
+  project:
+    description: 'Project or Repository Name'
+    required: false
+    default: ${{ github.repository }}
+  status:
+    description: 'Event status: success, failure, warning, info, mr, release'
+    required: false
+    default: 'info'
+  title:
+    description: 'Notification title'
+    required: true
+  message:
+    description: 'Notification message body (supports HTML tags)'
+    required: false
+    default: ''
+  url:
+    description: 'Optional URL button link'
+    required: false
+    default: ''
+  url-text:
+    description: 'Button text for the optional URL'
+    required: false
+    default: 'Open Link ↗'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Send Telegram Message
+      shell: bash
+      env:
+        BOT_TOKEN: ${{ inputs.bot-token }}
+        CHAT_ID: ${{ inputs.chat-id }}
+        PROJECT: ${{ inputs.project }}
+        STATUS: ${{ inputs.status }}
+        TITLE: ${{ inputs.title }}
+        MESSAGE: ${{ inputs.message }}
+        LINK_URL: ${{ inputs.url }}
+        LINK_TEXT: ${{ inputs.url-text }}
+        RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      run: |
+        case "$STATUS" in
+          success)
+            ICON="✅"
+            TAG="[SUCCESS]"
+            ;;
+          failure)
+            ICON="❌"
+            TAG="[FAILED]"
+            ;;
+          warning)
+            ICON="⚠️"
+            TAG="[WARNING]"
+            ;;
+          release)
+            ICON="🚀"
+            TAG="[RELEASE]"
+            ;;
+          mr)
+            ICON="🔀"
+            TAG="[MERGE REQUEST]"
+            ;;
+          *)
+            ICON="ℹ️"
+            TAG="[INFO]"
+            ;;
+        esac
+
+        FORMATTED_TEXT="$ICON <b>$PROJECT</b> $TAG"$'\n'
+        FORMATTED_TEXT+="<b>$TITLE</b>"$'\n\n'
+        if [ -n "$MESSAGE" ]; then
+          FORMATTED_TEXT+="$MESSAGE"$'\n\n'
+        fi
+        FORMATTED_TEXT+="<a href=\"$RUN_URL\">View Workflow Run</a>"
+
+        if [ -n "$LINK_URL" ]; then
+          JSON_PAYLOAD=$(jq -n \
+            --arg chat_id "$CHAT_ID" \
+            --arg text "$FORMATTED_TEXT" \
+            --arg btn_text "$LINK_TEXT" \
+            --arg btn_url "$LINK_URL" \
+            '{
+              chat_id: $chat_id,
+              text: $text,
+              parse_mode: "HTML",
+              disable_web_page_preview: true,
+              reply_markup: {
+                inline_keyboard: [[{text: $btn_text, url: $btn_url}]]
+              }
+            }')
+        else
+          JSON_PAYLOAD=$(jq -n \
+            --arg chat_id "$CHAT_ID" \
+            --arg text "$FORMATTED_TEXT" \
+            '{
+              chat_id: $chat_id,
+              text: $text,
+              parse_mode: "HTML",
+              disable_web_page_preview: true
+            }')
+        fi
+
+        curl -s -X POST "https://api.telegram.org/bot$BOT_TOKEN/sendMessage" \
+          -H "Content-Type: application/json" \
+          -d "$JSON_PAYLOAD" > /tmp/tg_response.json
+
+        if jq -e '.ok == true' /tmp/tg_response.json >/dev/null 2>&1; then
+          echo "Telegram notification sent successfully."
+        else
+          echo "Warning: Failed to send Telegram notification:"
+          cat /tmp/tg_response.json
+        fi

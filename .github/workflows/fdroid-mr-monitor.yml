@@ -1,0 +1,156 @@
+name: F-Droid MR Monitor
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_notify:
+        description: 'Force send status notification to Telegram'
+        type: boolean
+        default: false
+
+concurrency:
+  group: fdroid-mr-monitor
+  cancel-in-progress: false
+
+jobs:
+  check-mr:
+    name: Check F-Droid MR !52105
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Restore monitor state cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: state/
+          key: fdroid-mr-state-${{ github.run_id }}
+          restore-keys: fdroid-mr-state-
+
+      - name: Check GitLab MR Status
+        id: check
+        shell: bash
+        env:
+          FORCE_NOTIFY: ${{ inputs.force_notify || 'false' }}
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          mkdir -p state
+          STATE_FILE="state/monitor_state.json"
+
+          echo "Querying GitLab API for MR 52105..."
+          MR_DATA=$(curl -s --connect-timeout 15 --retry 3 "https://gitlab.com/api/v4/projects/36528/merge_requests/52105")
+
+          if [ -z "$MR_DATA" ] || ! echo "$MR_DATA" | jq -e '.id' >/dev/null 2>&1; then
+            echo "Failed to fetch valid MR data from GitLab API. Exiting."
+            exit 1
+          fi
+
+          CURR_STATE=$(echo "$MR_DATA" | jq -r '.state // "unknown"')
+          CURR_NOTES=$(echo "$MR_DATA" | jq -r '.user_notes_count // 0')
+          CURR_UPDATED=$(echo "$MR_DATA" | jq -r '.updated_at // ""')
+          MR_TITLE=$(echo "$MR_DATA" | jq -r '.title // "MoodyRoutine"')
+          MR_URL=$(echo "$MR_DATA" | jq -r '.web_url // "https://gitlab.com/fdroid/fdroiddata/-/merge_requests/52105"')
+          CURR_LABELS=$(echo "$MR_DATA" | jq -r '.labels | join(", ")')
+
+          echo "Current MR status: state=$CURR_STATE, notes=$CURR_NOTES, updated=$CURR_UPDATED, labels=[$CURR_LABELS]"
+
+          NOTIFY="false"
+          NOTIFY_STATUS="info"
+          NOTIFY_TITLE=""
+          NOTIFY_MSG=""
+
+          if [ ! -f "$STATE_FILE" ]; then
+            echo "No existing state file found. Initializing state."
+            echo "{\"state\":\"$CURR_STATE\",\"notes\":$CURR_NOTES,\"updated\":\"$CURR_UPDATED\"}" > "$STATE_FILE"
+            if [ "$FORCE_NOTIFY" = "true" ]; then
+              NOTIFY="true"
+              NOTIFY_STATUS="info"
+              NOTIFY_TITLE="F-Droid MR Monitor Initialized"
+              NOTIFY_MSG="Monitoring <a href=\"$MR_URL\">F-Droid MR !52105</a> ($MR_TITLE)"$'\n\n'
+              NOTIFY_MSG+="<b>State:</b> $CURR_STATE"$'\n'
+              NOTIFY_MSG+="<b>Comments:</b> $CURR_NOTES"$'\n'
+              NOTIFY_MSG+="<b>Labels:</b> $CURR_LABELS"
+            fi
+          else
+            PREV_STATE=$(jq -r '.state // "unknown"' "$STATE_FILE")
+            PREV_NOTES=$(jq -r '.notes // 0' "$STATE_FILE")
+
+            if [ "$CURR_STATE" = "merged" ] && [ "$PREV_STATE" != "merged" ]; then
+              NOTIFY="true"
+              NOTIFY_STATUS="success"
+              NOTIFY_TITLE="🎉 F-Droid MR !52105 MERGED!"
+              NOTIFY_MSG="MoodyRoutine has been successfully merged into F-Droid!"$'\n\n'
+              NOTIFY_MSG+="The app will be built and signed in the upcoming F-Droid repository index cycle."
+            elif [ "$CURR_STATE" = "closed" ] && [ "$PREV_STATE" != "closed" ]; then
+              NOTIFY="true"
+              NOTIFY_STATUS="warning"
+              NOTIFY_TITLE="⚠️ F-Droid MR !52105 Closed"
+              NOTIFY_MSG="MR !52105 was closed on F-Droid."
+            elif [ "$CURR_NOTES" -gt "$PREV_NOTES" ]; then
+              NOTIFY="true"
+              NOTIFY_STATUS="mr"
+              NOTIFY_TITLE="💬 New Comment on F-Droid MR !52105"
+
+              COMMENT_DETAILS=""
+              if [ -n "$GITLAB_TOKEN" ]; then
+                NOTES_DATA=$(curl -s --connect-timeout 10 -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/projects/36528/merge_requests/52105/notes?sort=desc&per_page=1")
+                LATEST_AUTHOR=$(echo "$NOTES_DATA" | jq -r '.[0].author.username // empty')
+                LATEST_BODY=$(echo "$NOTES_DATA" | jq -r '.[0].body // empty' | cut -c 1-250)
+                if [ -n "$LATEST_AUTHOR" ]; then
+                  COMMENT_DETAILS="<b>Author:</b> @$LATEST_AUTHOR"$'\n'
+                  COMMENT_DETAILS+="<b>Message:</b> "$'\n'
+                  COMMENT_DETAILS+="<blockquote>$LATEST_BODY</blockquote>"$'\n\n'
+                fi
+              fi
+
+              NOTIFY_MSG="$COMMENT_DETAILS"
+              NOTIFY_MSG+="<b>Total Comments:</b> $CURR_NOTES"$'\n'
+              NOTIFY_MSG+="<b>Status:</b> $CURR_STATE"
+            elif [ "$FORCE_NOTIFY" = "true" ]; then
+              NOTIFY="true"
+              NOTIFY_STATUS="info"
+              NOTIFY_TITLE="F-Droid MR !52105 Status Check"
+              NOTIFY_MSG="<b>Title:</b> $MR_TITLE"$'\n'
+              NOTIFY_MSG+="<b>State:</b> $CURR_STATE"$'\n'
+              NOTIFY_MSG+="<b>Comments:</b> $CURR_NOTES"$'\n'
+              NOTIFY_MSG+="<b>Labels:</b> $CURR_LABELS"
+            fi
+
+            echo "{\"state\":\"$CURR_STATE\",\"notes\":$CURR_NOTES,\"updated\":\"$CURR_UPDATED\"}" > "$STATE_FILE"
+          fi
+
+          echo "notify=$NOTIFY" >> "$GITHUB_OUTPUT"
+          echo "status=$NOTIFY_STATUS" >> "$GITHUB_OUTPUT"
+          echo "title=$NOTIFY_TITLE" >> "$GITHUB_OUTPUT"
+          echo "url=$MR_URL" >> "$GITHUB_OUTPUT"
+
+          # Export multiline message safely to GITHUB_OUTPUT
+          {
+            echo "message<<EOF"
+            echo "$NOTIFY_MSG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send Telegram Notification
+        if: steps.check.outputs.notify == 'true'
+        uses: ./.github/actions/telegram-notify
+        with:
+          bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat-id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          project: 'MoodyRoutine / F-Droid'
+          status: ${{ steps.check.outputs.status }}
+          title: ${{ steps.check.outputs.title }}
+          message: ${{ steps.check.outputs.message }}
+          url: ${{ steps.check.outputs.url }}
+          url-text: 'View MR on GitLab ↗'
+
+      - name: Save monitor state cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state/
+          key: fdroid-mr-state-${{ github.run_id }}
