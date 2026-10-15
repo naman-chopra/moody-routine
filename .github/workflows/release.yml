@@ -117,7 +117,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Send Telegram Release Notification
-        if: success() && secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        if: success()
+        continue-on-error: true
         uses: ./.github/actions/telegram-notify
         with:
           bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}

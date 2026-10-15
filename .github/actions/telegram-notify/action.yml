@@ -47,6 +47,11 @@ runs:
         LINK_TEXT: ${{ inputs.url-text }}
         RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       run: |
+        if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
+          echo "Telegram notification skipped: BOT_TOKEN or CHAT_ID not provided."
+          exit 0
+        fi
+
         case "$STATUS" in
           success)
             ICON="✅"
