@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check-mr:
-    name: Check F-Droid MR !52105
+  check-mrs:
+    name: Check All F-Droid MRs
     runs-on: ubuntu-latest
 
     steps:
@@ -31,122 +31,173 @@ jobs:
           key: fdroid-mr-state-${{ github.run_id }}
           restore-keys: fdroid-mr-state-
 
-      - name: Check GitLab MR Status
-        id: check
+      - name: Monitor F-Droid Merge Requests
         shell: bash
         env:
           FORCE_NOTIFY: ${{ inputs.force_notify || 'false' }}
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           mkdir -p state
           STATE_FILE="state/monitor_state.json"
 
-          echo "Querying GitLab API for MR 52105..."
-          MR_DATA=$(curl -s --connect-timeout 15 --retry 3 "https://gitlab.com/api/v4/projects/36528/merge_requests/52105")
+          send_telegram() {
+            local title="$1"
+            local status="$2"
+            local message="$3"
+            local url="$4"
+            local url_text="${5:-View MR on GitLab ↗}"
 
-          if [ -z "$MR_DATA" ] || ! echo "$MR_DATA" | jq -e '.id' >/dev/null 2>&1; then
-            echo "Failed to fetch valid MR data from GitLab API. Exiting."
+            local icon="ℹ️"
+            local tag="[INFO]"
+            case "$status" in
+              success) icon="✅"; tag="[SUCCESS]" ;;
+              failure) icon="❌"; tag="[FAILED]" ;;
+              warning) icon="⚠️"; tag="[WARNING]" ;;
+              release) icon="🚀"; tag="[RELEASE]" ;;
+              mr)      icon="🔀"; tag="[MERGE REQUEST]" ;;
+            esac
+
+            local text="$icon <b>F-Droid Watcher</b> $tag"$'\n'
+            text+="<b>$title</b>"$'\n\n'
+            if [ -n "$message" ]; then
+              text+="$message"$'\n\n'
+            fi
+            text+="<a href=\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">View Workflow Run</a>"
+
+            local payload
+            if [ -n "$url" ]; then
+              payload=$(jq -n \
+                --arg chat_id "$TELEGRAM_CHAT_ID" \
+                --arg text "$text" \
+                --arg btn_text "$url_text" \
+                --arg btn_url "$url" \
+                '{
+                  chat_id: $chat_id,
+                  text: $text,
+                  parse_mode: "HTML",
+                  disable_web_page_preview: true,
+                  reply_markup: {
+                    inline_keyboard: [[{text: $btn_text, url: $btn_url}]]
+                  }
+                }')
+            else
+              payload=$(jq -n \
+                --arg chat_id "$TELEGRAM_CHAT_ID" \
+                --arg text "$text" \
+                '{
+                  chat_id: $chat_id,
+                  text: $text,
+                  parse_mode: "HTML",
+                  disable_web_page_preview: true
+                }')
+            fi
+
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -H "Content-Type: application/json" \
+              -d "$payload" > /tmp/tg_out.json
+
+            if jq -e '.ok == true' /tmp/tg_out.json >/dev/null 2>&1; then
+              echo "Telegram alert sent: $title"
+            else
+              echo "Warning: Telegram send failed for $title:"
+              cat /tmp/tg_out.json
+            fi
+          }
+
+          echo "Querying GitLab API for all F-Droid MRs authored by naman-chopra..."
+          MR_LIST=$(curl -s --connect-timeout 15 --retry 3 "https://gitlab.com/api/v4/projects/36528/merge_requests?author_username=naman-chopra")
+
+          if [ -z "$MR_LIST" ] || ! echo "$MR_LIST" | jq -e 'type == "array"' >/dev/null 2>&1; then
+            echo "Failed to fetch valid MR list from GitLab API. Exiting."
             exit 1
           fi
 
-          CURR_STATE=$(echo "$MR_DATA" | jq -r '.state // "unknown"')
-          CURR_NOTES=$(echo "$MR_DATA" | jq -r '.user_notes_count // 0')
-          CURR_UPDATED=$(echo "$MR_DATA" | jq -r '.updated_at // ""')
-          MR_TITLE=$(echo "$MR_DATA" | jq -r '.title // "MoodyRoutine"')
-          MR_URL=$(echo "$MR_DATA" | jq -r '.web_url // "https://gitlab.com/fdroid/fdroiddata/-/merge_requests/52105"')
-          CURR_LABELS=$(echo "$MR_DATA" | jq -r '.labels | join(", ")')
-
-          echo "Current MR status: state=$CURR_STATE, notes=$CURR_NOTES, updated=$CURR_UPDATED, labels=[$CURR_LABELS]"
-
-          NOTIFY="false"
-          NOTIFY_STATUS="info"
-          NOTIFY_TITLE=""
-          NOTIFY_MSG=""
+          TOTAL_MRS=$(echo "$MR_LIST" | jq 'length')
+          echo "Found $TOTAL_MRS merge request(s) on GitLab."
 
           if [ ! -f "$STATE_FILE" ]; then
-            echo "No existing state file found. Initializing state."
-            echo "{\"state\":\"$CURR_STATE\",\"notes\":$CURR_NOTES,\"updated\":\"$CURR_UPDATED\"}" > "$STATE_FILE"
-            if [ "$FORCE_NOTIFY" = "true" ]; then
-              NOTIFY="true"
-              NOTIFY_STATUS="info"
-              NOTIFY_TITLE="F-Droid MR Monitor Initialized"
-              NOTIFY_MSG="Monitoring <a href=\"$MR_URL\">F-Droid MR !52105</a> ($MR_TITLE)"$'\n\n'
-              NOTIFY_MSG+="<b>State:</b> $CURR_STATE"$'\n'
-              NOTIFY_MSG+="<b>Comments:</b> $CURR_NOTES"$'\n'
-              NOTIFY_MSG+="<b>Labels:</b> $CURR_LABELS"
-            fi
-          else
-            PREV_STATE=$(jq -r '.state // "unknown"' "$STATE_FILE")
-            PREV_NOTES=$(jq -r '.notes // 0' "$STATE_FILE")
-
-            if [ "$CURR_STATE" = "merged" ] && [ "$PREV_STATE" != "merged" ]; then
-              NOTIFY="true"
-              NOTIFY_STATUS="success"
-              NOTIFY_TITLE="🎉 F-Droid MR !52105 MERGED!"
-              NOTIFY_MSG="MoodyRoutine has been successfully merged into F-Droid!"$'\n\n'
-              NOTIFY_MSG+="The app will be built and signed in the upcoming F-Droid repository index cycle."
-            elif [ "$CURR_STATE" = "closed" ] && [ "$PREV_STATE" != "closed" ]; then
-              NOTIFY="true"
-              NOTIFY_STATUS="warning"
-              NOTIFY_TITLE="⚠️ F-Droid MR !52105 Closed"
-              NOTIFY_MSG="MR !52105 was closed on F-Droid."
-            elif [ "$CURR_NOTES" -gt "$PREV_NOTES" ]; then
-              NOTIFY="true"
-              NOTIFY_STATUS="mr"
-              NOTIFY_TITLE="💬 New Comment on F-Droid MR !52105"
-
-              COMMENT_DETAILS=""
-              if [ -n "$GITLAB_TOKEN" ]; then
-                NOTES_DATA=$(curl -s --connect-timeout 10 -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/projects/36528/merge_requests/52105/notes?sort=desc&per_page=1")
-                LATEST_AUTHOR=$(echo "$NOTES_DATA" | jq -r '.[0].author.username // empty')
-                LATEST_BODY=$(echo "$NOTES_DATA" | jq -r '.[0].body // empty' | cut -c 1-250)
-                if [ -n "$LATEST_AUTHOR" ]; then
-                  COMMENT_DETAILS="<b>Author:</b> @$LATEST_AUTHOR"$'\n'
-                  COMMENT_DETAILS+="<b>Message:</b> "$'\n'
-                  COMMENT_DETAILS+="<blockquote>$LATEST_BODY</blockquote>"$'\n\n'
-                fi
-              fi
-
-              NOTIFY_MSG="$COMMENT_DETAILS"
-              NOTIFY_MSG+="<b>Total Comments:</b> $CURR_NOTES"$'\n'
-              NOTIFY_MSG+="<b>Status:</b> $CURR_STATE"
-            elif [ "$FORCE_NOTIFY" = "true" ]; then
-              NOTIFY="true"
-              NOTIFY_STATUS="info"
-              NOTIFY_TITLE="F-Droid MR !52105 Status Check"
-              NOTIFY_MSG="<b>Title:</b> $MR_TITLE"$'\n'
-              NOTIFY_MSG+="<b>State:</b> $CURR_STATE"$'\n'
-              NOTIFY_MSG+="<b>Comments:</b> $CURR_NOTES"$'\n'
-              NOTIFY_MSG+="<b>Labels:</b> $CURR_LABELS"
-            fi
-
-            echo "{\"state\":\"$CURR_STATE\",\"notes\":$CURR_NOTES,\"updated\":\"$CURR_UPDATED\"}" > "$STATE_FILE"
+            echo "{}" > "$STATE_FILE"
           fi
 
-          echo "notify=$NOTIFY" >> "$GITHUB_OUTPUT"
-          echo "status=$NOTIFY_STATUS" >> "$GITHUB_OUTPUT"
-          echo "title=$NOTIFY_TITLE" >> "$GITHUB_OUTPUT"
-          echo "url=$MR_URL" >> "$GITHUB_OUTPUT"
+          # Read existing state JSON into a variable
+          SAVED_STATE=$(cat "$STATE_FILE")
+          NEW_STATE="$SAVED_STATE"
 
-          # Export multiline message safely to GITHUB_OUTPUT
-          {
-            echo "message<<EOF"
-            echo "$NOTIFY_MSG"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "$MR_LIST" | jq -c '.[]' | while read -r mr; do
+            IID=$(echo "$mr" | jq -r '.iid')
+            TITLE=$(echo "$mr" | jq -r '.title // "Untitled MR"')
+            STATE=$(echo "$mr" | jq -r '.state // "unknown"')
+            NOTES=$(echo "$mr" | jq -r '.user_notes_count // 0')
+            URL=$(echo "$mr" | jq -r '.web_url // ""')
+            LABELS=$(echo "$mr" | jq -r '.labels | join(", ")')
+            UPDATED=$(echo "$mr" | jq -r '.updated_at // ""')
 
-      - name: Send Telegram Notification
-        if: steps.check.outputs.notify == 'true'
-        uses: ./.github/actions/telegram-notify
-        with:
-          bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          chat-id: ${{ secrets.TELEGRAM_CHAT_ID }}
-          project: 'MoodyRoutine / F-Droid'
-          status: ${{ steps.check.outputs.status }}
-          title: ${{ steps.check.outputs.title }}
-          message: ${{ steps.check.outputs.message }}
-          url: ${{ steps.check.outputs.url }}
-          url-text: 'View MR on GitLab ↗'
+            echo "Processing MR !$IID ($TITLE) - State: $STATE, Notes: $NOTES"
+
+            PREV_ENTRY=$(echo "$SAVED_STATE" | jq -r --arg iid "$IID" '.[$iid] // empty')
+
+            if [ -z "$PREV_ENTRY" ]; then
+              echo "First time tracking MR !$IID. Registering in state."
+              if [ "$FORCE_NOTIFY" = "true" ]; then
+                send_telegram \
+                  "F-Droid Monitor: Tracked MR !$IID" \
+                  "info" \
+                  "Now tracking <b>$TITLE</b>"$'\n\n' \
+                  "<b>State:</b> $STATE"$'\n' \
+                  "<b>Comments:</b> $NOTES"$'\n' \
+                  "<b>Labels:</b> $LABELS" \
+                  "$URL"
+              fi
+            else
+              PREV_STATE=$(echo "$PREV_ENTRY" | jq -r '.state // "unknown"')
+              PREV_NOTES=$(echo "$PREV_ENTRY" | jq -r '.notes // 0')
+
+              if [ "$STATE" = "merged" ] && [ "$PREV_STATE" != "merged" ]; then
+                send_telegram \
+                  "🎉 F-Droid MR !$IID MERGED!" \
+                  "success" \
+                  "<b>$TITLE</b> has been successfully merged into F-Droid!"$'\n\n' \
+                  "The application will be built and signed in the next F-Droid index cycle." \
+                  "$URL"
+              elif [ "$STATE" = "closed" ] && [ "$PREV_STATE" != "closed" ]; then
+                send_telegram \
+                  "⚠️ F-Droid MR !$IID Closed" \
+                  "warning" \
+                  "<b>$TITLE</b> was closed on F-Droid." \
+                  "$URL"
+              elif [ "$NOTES" -gt "$PREV_NOTES" ]; then
+                send_telegram \
+                  "💬 New Comment on MR !$IID" \
+                  "mr" \
+                  "New activity on <b>$TITLE</b>"$'\n\n' \
+                  "<b>Total Comments:</b> $NOTES"$'\n' \
+                  "<b>Status:</b> $STATE"$'\n' \
+                  "<b>Labels:</b> $LABELS" \
+                  "$URL"
+              elif [ "$FORCE_NOTIFY" = "true" ]; then
+                send_telegram \
+                  "F-Droid MR !$IID Status Check" \
+                  "info" \
+                  "<b>Title:</b> $TITLE"$'\n' \
+                  "<b>State:</b> $STATE"$'\n' \
+                  "<b>Comments:</b> $NOTES"$'\n' \
+                  "<b>Labels:</b> $LABELS" \
+                  "$URL"
+              fi
+            fi
+
+            # Update state file for this IID
+            UPDATED_JSON=$(jq \
+              --arg iid "$IID" \
+              --arg state "$STATE" \
+              --argjson notes "$NOTES" \
+              --arg updated "$UPDATED" \
+              '.[$iid] = {state: $state, notes: $notes, updated: $updated}' \
+              "$STATE_FILE")
+            echo "$UPDATED_JSON" > "$STATE_FILE"
+          done
 
       - name: Save monitor state cache
         if: always()
