@@ -141,50 +141,35 @@ jobs:
             if [ -z "$PREV_ENTRY" ]; then
               echo "First time tracking MR !$IID. Registering in state."
               if [ "$FORCE_NOTIFY" = "true" ]; then
-                send_telegram \
-                  "F-Droid Monitor: Tracked MR !$IID" \
-                  "info" \
-                  "Now tracking <b>$TITLE</b>"$'\n\n' \
-                  "<b>State:</b> $STATE"$'\n' \
-                  "<b>Comments:</b> $NOTES"$'\n' \
-                  "<b>Labels:</b> $LABELS" \
-                  "$URL"
+                MSG="Now tracking <b>$TITLE</b>"$'\n\n'
+                MSG+="<b>State:</b> $STATE"$'\n'
+                MSG+="<b>Comments:</b> $NOTES"$'\n'
+                MSG+="<b>Labels:</b> $LABELS"
+                send_telegram "F-Droid Monitor: Tracked MR !$IID" "info" "$MSG" "$URL"
               fi
             else
               PREV_STATE=$(echo "$PREV_ENTRY" | jq -r '.state // "unknown"')
               PREV_NOTES=$(echo "$PREV_ENTRY" | jq -r '.notes // 0')
 
               if [ "$STATE" = "merged" ] && [ "$PREV_STATE" != "merged" ]; then
-                send_telegram \
-                  "🎉 F-Droid MR !$IID MERGED!" \
-                  "success" \
-                  "<b>$TITLE</b> has been successfully merged into F-Droid!"$'\n\n' \
-                  "The application will be built and signed in the next F-Droid index cycle." \
-                  "$URL"
+                MSG="<b>$TITLE</b> has been successfully merged into F-Droid!"$'\n\n'
+                MSG+="The application will be built and signed in the next F-Droid index cycle."
+                send_telegram "🎉 F-Droid MR !$IID MERGED!" "success" "$MSG" "$URL"
               elif [ "$STATE" = "closed" ] && [ "$PREV_STATE" != "closed" ]; then
-                send_telegram \
-                  "⚠️ F-Droid MR !$IID Closed" \
-                  "warning" \
-                  "<b>$TITLE</b> was closed on F-Droid." \
-                  "$URL"
+                MSG="<b>$TITLE</b> was closed on F-Droid."
+                send_telegram "⚠️ F-Droid MR !$IID Closed" "warning" "$MSG" "$URL"
               elif [ "$NOTES" -gt "$PREV_NOTES" ]; then
-                send_telegram \
-                  "💬 New Comment on MR !$IID" \
-                  "mr" \
-                  "New activity on <b>$TITLE</b>"$'\n\n' \
-                  "<b>Total Comments:</b> $NOTES"$'\n' \
-                  "<b>Status:</b> $STATE"$'\n' \
-                  "<b>Labels:</b> $LABELS" \
-                  "$URL"
+                MSG="New activity on <b>$TITLE</b>"$'\n\n'
+                MSG+="<b>Total Comments:</b> $NOTES"$'\n'
+                MSG+="<b>Status:</b> $STATE"$'\n'
+                MSG+="<b>Labels:</b> $LABELS"
+                send_telegram "💬 New Comment on MR !$IID" "mr" "$MSG" "$URL"
               elif [ "$FORCE_NOTIFY" = "true" ]; then
-                send_telegram \
-                  "F-Droid MR !$IID Status Check" \
-                  "info" \
-                  "<b>Title:</b> $TITLE"$'\n' \
-                  "<b>State:</b> $STATE"$'\n' \
-                  "<b>Comments:</b> $NOTES"$'\n' \
-                  "<b>Labels:</b> $LABELS" \
-                  "$URL"
+                MSG="<b>Title:</b> $TITLE"$'\n'
+                MSG+="<b>State:</b> $STATE"$'\n'
+                MSG+="<b>Comments:</b> $NOTES"$'\n'
+                MSG+="<b>Labels:</b> $LABELS"
+                send_telegram "F-Droid MR !$IID Status Check" "info" "$MSG" "$URL"
               fi
             fi
 
